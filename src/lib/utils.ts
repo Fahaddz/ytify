@@ -123,25 +123,100 @@ export function handleXtags(audioStreams: AudioStream[]) {
 
 export async function getDownloadLink(id: string): Promise<string | null> {
   const streamUrl = 'https://youtu.be/' + id;
-  const dl = await fetch('https://cobalt-api.kwiatekmiki.com', {
-    method: 'POST',
-    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      url: streamUrl,
-      downloadMode: 'audio',
-      audioFormat: store.downloadFormat,
-      filenameStyle: 'basic'
-    })
-  })
-    .then(_ => _.json())
-    .then(_ => {
-      if ('url' in _)
-        return _.url;
-      else throw new Error(_.error.code);
-    })
-    .catch(notify);
+  
+  // Array of working Cobalt API endpoints (ordered by reliability and preference)
+  // Based on https://instances.cobalt.best/ and testing results
+  const cobaltApis = [
+    // Official cobalt.tools instances (highest reliability)
+    'https://sunny.imput.net',
+    'https://nachos.imput.net', 
+    'https://kityune.imput.net',
+    'https://blossom.imput.net',
+    
+    // High-scoring community instances
+    'https://cobalt-api.kwiatekmiki.com',
+    'https://cobalt-backend.canine.tools',
+    'https://capi.3kh0.net',
+    
+    // Additional working instances
+    'https://noodle.imput.net',
+    'https://cobalt.api.timelessnesses.me',
+    'https://olly.imput.net',
+    
+    // Lower score but potentially working instances
+    'https://downloadapi.stuff.solutions',
+    'https://cobalt-7.kwiatekmiki.com',
+    
+    // Fallback to the problematic original
+    'https://cobalt-api.kwiatekmiki.com'
+  ];
 
-  return dl || '';
+  const requestBody = {
+    url: streamUrl,
+    downloadMode: 'audio',
+    audioFormat: store.downloadFormat,
+    filenameStyle: 'basic'
+  };
+
+  // Try each API endpoint until one works
+  for (let i = 0; i < cobaltApis.length; i++) {
+    const apiUrl = cobaltApis[i];
+    
+    try {
+      console.log(`Attempting download from API ${i + 1}/${cobaltApis.length}: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 
+          'Accept': 'application/json', 
+          'Content-Type': 'application/json',
+          'User-Agent': 'Ytify-App/1.0'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        console.warn(`API ${apiUrl} returned status ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      
+      if ('url' in data && data.url) {
+        console.log(`Successfully got download URL from ${apiUrl}`);
+        
+        // Verify the download URL is valid by checking if it's accessible
+        try {
+          const testResponse = await fetch(data.url, { method: 'HEAD' });
+          if (testResponse.ok && testResponse.headers.get('content-length') !== '0') {
+            return data.url;
+          } else {
+            console.warn(`Download URL from ${apiUrl} appears to be empty or invalid`);
+            continue;
+          }
+        } catch (testError) {
+          console.warn(`Failed to verify download URL from ${apiUrl}:`, testError);
+          continue;
+        }
+      } else if ('error' in data) {
+        console.warn(`API ${apiUrl} returned error:`, data.error);
+        continue;
+      } else {
+        console.warn(`API ${apiUrl} returned unexpected response:`, data);
+        continue;
+      }
+      
+    } catch (error) {
+      console.warn(`Failed to fetch from ${apiUrl}:`, error);
+      continue;
+    }
+  }
+
+  // If we get here, all APIs failed
+  const errorMessage = 'All download services are currently unavailable. Please try again later.';
+  notify(errorMessage);
+  console.error('All Cobalt API endpoints failed');
+  return null;
 }
 
 export async function errorHandler(
