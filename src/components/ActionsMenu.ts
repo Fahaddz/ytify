@@ -2,7 +2,7 @@ import './ActionsMenu.css';
 import { html, render } from "uhtml";
 import { loadingScreen, openInYtBtn } from "../lib/dom";
 import { state, store } from "../lib/store";
-import { getDownloadLink, hostResolver } from "../lib/utils";
+import { getDownloadLink, hostResolver, notify } from "../lib/utils";
 import CollectionSelector from "./CollectionSelector";
 import fetchList from "../modules/fetchList";
 import { i18n } from '../scripts/i18n';
@@ -59,12 +59,23 @@ export default function(dialog: HTMLDialogElement) {
       <li tabindex="4" @click=${async () => {
       close();
       loadingScreen.showModal();
-      const a = document.createElement('a');
-      const l = await getDownloadLink(store.actionsMenu.id);
-      if (l) {
-        a.href = l;
-        a.click();
+      
+      try {
+        const downloadUrl = await getDownloadLink(store.actionsMenu.id);
+        if (downloadUrl) {
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = `${store.actionsMenu.title || store.actionsMenu.id}.${store.downloadFormat}`;
+          a.click();
+        } else {
+          // getDownloadLink already shows a notification, so we don't need to show another one
+          console.warn('Download failed: No valid download URL obtained');
+        }
+      } catch (error) {
+        console.error('Download error:', error);
+        notify('Download failed due to an unexpected error. Please try again.');
       }
+      
       loadingScreen.close();
     }}>
         <i class="ri-download-2-fill"></i>${i18n('actions_menu_download')}

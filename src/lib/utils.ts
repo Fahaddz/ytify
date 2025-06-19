@@ -134,7 +134,6 @@ export async function getDownloadLink(id: string): Promise<string | null> {
     'https://blossom.imput.net',
     
     // High-scoring community instances
-    'https://cobalt-api.kwiatekmiki.com',
     'https://cobalt-backend.canine.tools',
     'https://capi.3kh0.net',
     
@@ -145,10 +144,7 @@ export async function getDownloadLink(id: string): Promise<string | null> {
     
     // Lower score but potentially working instances
     'https://downloadapi.stuff.solutions',
-    'https://cobalt-7.kwiatekmiki.com',
-    
-    // Fallback to the problematic original
-    'https://cobalt-api.kwiatekmiki.com'
+    'https://cobalt-7.kwiatekmiki.com'
   ];
 
   const requestBody = {
@@ -157,6 +153,8 @@ export async function getDownloadLink(id: string): Promise<string | null> {
     audioFormat: store.downloadFormat,
     filenameStyle: 'basic'
   };
+
+  let lastError = '';
 
   // Try each API endpoint until one works
   for (let i = 0; i < cobaltApis.length; i++) {
@@ -172,50 +170,94 @@ export async function getDownloadLink(id: string): Promise<string | null> {
           'Content-Type': 'application/json',
           'User-Agent': 'Ytify-App/1.0'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
 
       if (!response.ok) {
         console.warn(`API ${apiUrl} returned status ${response.status}`);
+        lastError = `HTTP ${response.status}`;
         continue;
       }
 
       const data = await response.json();
       
-      if ('url' in data && data.url) {
-        console.log(`Successfully got download URL from ${apiUrl}`);
+      // Check for successful response with download URL
+      if ('url' in data && data.url && typeof data.url === 'string') {
+        const downloadUrl = data.url;
+        console.log(`Got potential download URL from ${apiUrl}: ${downloadUrl}`);
         
-        // Verify the download URL is valid by checking if it's accessible
+        // Strict validation of the download URL
         try {
-          const testResponse = await fetch(data.url, { method: 'HEAD' });
-          if (testResponse.ok && testResponse.headers.get('content-length') !== '0') {
-            return data.url;
-          } else {
-            console.warn(`Download URL from ${apiUrl} appears to be empty or invalid`);
+          // Check if URL is valid and accessible
+          const testResponse = await fetch(downloadUrl, { 
+            method: 'HEAD',
+            signal: AbortSignal.timeout(5000) // 5 second timeout for verification
+          });
+          
+          if (!testResponse.ok) {
+            console.warn(`Download URL from ${apiUrl} returned ${testResponse.status}`);
+            lastError = `Download URL returned ${testResponse.status}`;
             continue;
           }
+          
+          // Check content length
+          const contentLength = testResponse.headers.get('content-length');
+          if (contentLength && parseInt(contentLength) === 0) {
+            console.warn(`Download URL from ${apiUrl} has 0 bytes content`);
+            lastError = 'Download URL has 0 bytes';
+            continue;
+          }
+          
+          // Check if content-length is missing but content-type suggests it should have content
+          const contentType = testResponse.headers.get('content-type');
+          if (!contentLength && contentType && (
+            contentType.includes('audio/') || 
+            contentType.includes('video/') ||
+            contentType.includes('application/octet-stream')
+          )) {
+            // For streaming content without explicit length, this might be okay
+            console.log(`Download URL from ${apiUrl} has streaming content type: ${contentType}`);
+          } else if (!contentLength) {
+            console.warn(`Download URL from ${apiUrl} has no content-length header and unclear content-type`);
+            lastError = 'Download URL has unclear content';
+            continue;
+          }
+          
+          console.log(`✅ Successfully validated download URL from ${apiUrl}`);
+          return downloadUrl;
+          
         } catch (testError) {
           console.warn(`Failed to verify download URL from ${apiUrl}:`, testError);
+          lastError = `URL verification failed: ${testError}`;
           continue;
         }
-      } else if ('error' in data) {
-        console.warn(`API ${apiUrl} returned error:`, data.error);
+        
+      } else if ('error' in data && data.error) {
+        const errorMsg = typeof data.error === 'string' ? data.error : 
+                        (data.error.code || JSON.stringify(data.error));
+        console.warn(`API ${apiUrl} returned error:`, errorMsg);
+        lastError = errorMsg;
         continue;
+        
       } else {
-        console.warn(`API ${apiUrl} returned unexpected response:`, data);
+        console.warn(`API ${apiUrl} returned unexpected response format:`, data);
+        lastError = 'Unexpected response format';
         continue;
       }
       
     } catch (error) {
-      console.warn(`Failed to fetch from ${apiUrl}:`, error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.warn(`Failed to fetch from ${apiUrl}:`, errorMsg);
+      lastError = errorMsg;
       continue;
     }
   }
 
   // If we get here, all APIs failed
-  const errorMessage = 'All download services are currently unavailable. Please try again later.';
+  const errorMessage = `Download failed: ${lastError || 'All download services are unavailable'}. Please try again later.`;
   notify(errorMessage);
-  console.error('All Cobalt API endpoints failed');
+  console.error('All Cobalt API endpoints failed. Last error:', lastError);
   return null;
 }
 

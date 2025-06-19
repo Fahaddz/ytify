@@ -50,11 +50,17 @@ export default async function() {
       import('../components/WatchVideo.ts')
         .then(mod => mod.default(dialog));
     } else if (isPWA && shareAction === 'download') {
-      const a = document.createElement('a');
-      const l = await getDownloadLink(store.actionsMenu.id);
-      if (l) {
-        a.href = l;
-        a.click();
+      try {
+        const downloadUrl = await getDownloadLink(store.actionsMenu.id);
+        if (downloadUrl) {
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = `${store.actionsMenu.title || store.actionsMenu.id}.${store.downloadFormat}`;
+          a.click();
+        }
+        // getDownloadLink already shows notification on failure
+      } catch (error) {
+        console.error('PWA Download error:', error);
       }
     } else await player(id)
 

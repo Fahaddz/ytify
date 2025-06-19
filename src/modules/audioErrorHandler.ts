@@ -50,10 +50,13 @@ export default function(audio: HTMLAudioElement) {
 
     function useCobalt() {
       getDownloadLink(id)
-        .then(_ => {
-          if (_)
-            audio.src = _;
-          else throw new Error();
+        .then(downloadUrl => {
+          if (downloadUrl) {
+            audio.src = downloadUrl;
+          } else {
+            console.error('Emergency cobalt download failed - no valid URL');
+            throw new Error('No valid download URL available');
+          }
         })
         .catch(() => {
           if (audio.parentNode)
