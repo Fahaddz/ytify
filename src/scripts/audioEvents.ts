@@ -42,6 +42,7 @@ audio.onplaying = function() {
   playButton.classList.replace(playButton.className, 'ri-pause-circle-fill');
 
   store.player.playbackState = 'playing';
+  if (msn) navigator.mediaSession.playbackState = 'playing';
 
   const id = store.stream.id;
 
@@ -61,6 +62,7 @@ audio.onpause = function() {
   playButton.classList.replace('ri-pause-circle-fill', 'ri-play-circle-fill');
   store.player.playbackState = 'paused';
   clearTimeout(historyTimeoutId);
+  if (msn) navigator.mediaSession.playbackState = 'paused';
 }
 
 
@@ -78,6 +80,7 @@ audio.onloadstart = function() {
   if (isPlayable) audio.play();
   historyID = store.stream.id;
   clearTimeout(historyTimeoutId);
+  if (msn) navigator.mediaSession.playbackState = 'none';
 
   // persist playback speed
   if (playSpeed.value !== '1.00')
@@ -243,6 +246,7 @@ if (msn) {
   navigator.mediaSession.setActionHandler("seekforward", null);
   navigator.mediaSession.setActionHandler("seekbackward", null);
   navigator.mediaSession.setActionHandler("seekto", null);
+  navigator.mediaSession.setActionHandler("stop", null);
 }
 
 
