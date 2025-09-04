@@ -242,10 +242,7 @@ if (msn) {
   });
   navigator.mediaSession.setActionHandler("seekforward", null);
   navigator.mediaSession.setActionHandler("seekbackward", null);
-  navigator.mediaSession.setActionHandler("seekto", e => {
-    audio.currentTime = e.seekTime || 0;
-    updatePositionState();
-  });
+  navigator.mediaSession.setActionHandler("seekto", null);
   navigator.mediaSession.setActionHandler("nexttrack", () => {
     onEnd();
     updatePositionState();
