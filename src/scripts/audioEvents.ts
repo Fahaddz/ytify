@@ -48,7 +48,6 @@ audio.onplaying = function() {
   playButton.classList.replace(playButton.className, 'ri-pause-circle-fill');
 
   store.player.playbackState = 'playing';
-  if (msn) navigator.mediaSession.playbackState = 'playing';
 
   const id = store.stream.id;
 
@@ -68,7 +67,6 @@ audio.onpause = function() {
   playButton.classList.replace('ri-pause-circle-fill', 'ri-play-circle-fill');
   store.player.playbackState = 'paused';
   clearTimeout(historyTimeoutId);
-  if (msn) navigator.mediaSession.playbackState = 'paused';
 }
 
 
@@ -240,9 +238,6 @@ if (msn) {
   navigator.mediaSession.setActionHandler('pause', () => {
     audio.pause();
   });
-  navigator.mediaSession.setActionHandler("seekforward", null);
-  navigator.mediaSession.setActionHandler("seekbackward", null);
-  navigator.mediaSession.setActionHandler("seekto", null);
   navigator.mediaSession.setActionHandler("nexttrack", () => {
     onEnd();
     updatePositionState();
