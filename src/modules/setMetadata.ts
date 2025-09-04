@@ -61,7 +61,6 @@ export async function setMetaData(data: CollectionItem) {
 
 
   if ('mediaSession' in navigator) {
-    navigator.mediaSession.setPositionState();
     navigator.mediaSession.metadata = new MediaMetadata(metadataObj);
   }
 
