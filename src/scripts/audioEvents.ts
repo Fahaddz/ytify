@@ -20,12 +20,6 @@ const volumeIcon = <HTMLLabelElement>volumeChanger.previousElementSibling;
 
 const msn = 'mediaSession' in navigator;
 function updatePositionState() {
-  if (msn && 'setPositionState' in navigator.mediaSession)
-    navigator.mediaSession.setPositionState({
-      duration: audio.duration || 0,
-      playbackRate: audio.playbackRate || 1,
-      position: Math.floor(audio.currentTime || 0),
-    });
 }
 
 
@@ -246,6 +240,9 @@ if (msn) {
     prev();
     updatePositionState();
   });
+  navigator.mediaSession.setActionHandler("seekforward", null);
+  navigator.mediaSession.setActionHandler("seekbackward", null);
+  navigator.mediaSession.setActionHandler("seekto", null);
 }
 
 
