@@ -61,7 +61,9 @@ export async function setMetaData(data: CollectionItem) {
 
 
   if ('mediaSession' in navigator) {
-    navigator.mediaSession.setPositionState();
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS && 'setPositionState' in navigator.mediaSession)
+      navigator.mediaSession.setPositionState();
     navigator.mediaSession.metadata = new MediaMetadata(metadataObj);
   }
 

@@ -19,8 +19,9 @@ const volumeIcon = <HTMLLabelElement>volumeChanger.previousElementSibling;
 
 
 const msn = 'mediaSession' in navigator;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function updatePositionState() {
-  if (msn && 'setPositionState' in navigator.mediaSession)
+  if (!isIOS && msn && 'setPositionState' in navigator.mediaSession)
     navigator.mediaSession.setPositionState({
       duration: audio.duration || 0,
       playbackRate: audio.playbackRate || 1,
