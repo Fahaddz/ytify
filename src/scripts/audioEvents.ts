@@ -238,18 +238,9 @@ if (msn) {
   navigator.mediaSession.setActionHandler('pause', () => {
     audio.pause();
   });
-  navigator.mediaSession.setActionHandler("seekforward", () => {
-    audio.currentTime += 15;
-    updatePositionState();
-  });
-  navigator.mediaSession.setActionHandler("seekbackward", () => {
-    audio.currentTime -= 15;
-    updatePositionState();
-  });
-  navigator.mediaSession.setActionHandler("seekto", e => {
-    audio.currentTime = e.seekTime || 0;
-    updatePositionState();
-  });
+  navigator.mediaSession.setActionHandler("seekforward", null);
+  navigator.mediaSession.setActionHandler("seekbackward", null);
+  navigator.mediaSession.setActionHandler("seekto", null);
   navigator.mediaSession.setActionHandler("nexttrack", () => {
     onEnd();
     updatePositionState();
