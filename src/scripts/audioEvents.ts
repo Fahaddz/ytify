@@ -256,5 +256,14 @@ if (msn) {
     updatePositionState();
   });
 }
+// bridge for native wrappers (Capacitor/WKWebView) to control playback
+// exposes minimal safe surface for remote command center integration
+// @ts-ignore
+window.ytifyBridge = Object.assign({}, window.ytifyBridge, {
+  play: () => audio.play(),
+  pause: () => audio.pause(),
+  next: () => onEnd(),
+  previous: () => prev(),
+});
 
 
