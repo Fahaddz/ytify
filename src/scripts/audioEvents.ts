@@ -246,6 +246,16 @@ if (msn) {
     navigator.mediaSession.setActionHandler("seekforward", null);
     navigator.mediaSession.setActionHandler("seekbackward", null);
     navigator.mediaSession.setActionHandler("seekto", null);
+  } else {
+    navigator.mediaSession.setActionHandler("seekforward", () => {
+      onEnd();
+      updatePositionState();
+    });
+    navigator.mediaSession.setActionHandler("seekbackward", () => {
+      prev();
+      updatePositionState();
+    });
+    navigator.mediaSession.setActionHandler("seekto", null);
   }
   navigator.mediaSession.setActionHandler("nexttrack", () => {
     onEnd();
